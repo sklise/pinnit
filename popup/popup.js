@@ -2,6 +2,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabList = document.getElementById('locked-tabs-list');
 
   try {
+    // Check if storage permissions are active
+    if (!chrome.storage || !chrome.storage.session) {
+      tabList.innerHTML = `
+        <div class="empty-state">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--text-muted);">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          <span class="empty-title">Reload Required</span>
+          <p>Please click the reload button on the <code>chrome://extensions</code> page to grant storage permissions.</p>
+        </div>
+      `;
+      return;
+    }
+
     // 1. Fetch all pinned tabs and current session storage locks
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
     const storage = await chrome.storage.session.get(null);

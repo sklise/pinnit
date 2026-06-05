@@ -20,6 +20,10 @@ function extractDomain(urlStr) {
  * Synchronizes session storage locks with actual pinned tabs in Chrome.
  */
 async function syncLocks() {
+  if (!chrome.storage || !chrome.storage.session) {
+    console.warn('[Pinnit] chrome.storage.session is not available. Please reload the extension.');
+    return;
+  }
   try {
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
     const storage = await chrome.storage.session.get(null);
@@ -62,6 +66,7 @@ async function syncLocks() {
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   // Only target the main/top-level frame
   if (details.frameId !== 0) return;
+  if (!chrome.storage || !chrome.storage.session) return;
 
   const tabId = details.tabId;
   const key = `tab-${tabId}`;
@@ -97,6 +102,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
 // Watch for tab status and updates
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (!chrome.storage || !chrome.storage.session) return;
   try {
     const key = `tab-${tabId}`;
     
@@ -151,6 +157,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 // Clean up locks when tabs are closed
 chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if (!chrome.storage || !chrome.storage.session) return;
   try {
     await chrome.storage.session.remove(`tab-${tabId}`);
   } catch (error) {
