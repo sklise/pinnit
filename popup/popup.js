@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     // Check if storage permissions are active
-    if (!chrome.storage || !chrome.storage.session) {
+    if (!chrome.storage || !chrome.storage.local) {
       tabList.innerHTML = `
         <div class="empty-state">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--text-muted);">
@@ -16,9 +16,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // 1. Fetch all pinned tabs and current session storage locks
+    // 1. Fetch all pinned tabs and current local storage locks
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
-    const storage = await chrome.storage.session.get(null);
+    const storage = await chrome.storage.local.get(null);
 
     // Clear loading state
     tabList.innerHTML = '';

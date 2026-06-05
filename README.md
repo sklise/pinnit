@@ -8,11 +8,11 @@
 ## How It Works
 
 Pinnit uses Manifest V3 best practices and standard Chrome extension APIs:
-1. **Dynamic Detection**: A background service worker (`background.js`) tracks the pinned states and active URLs of tabs, storing state locks securely in `chrome.storage.session`.
+1. **Dynamic Detection**: A background service worker (`background.js`) tracks the pinned states and active URLs of tabs, storing state locks securely in `chrome.storage.local`.
 2. **Navigation Interception**: It listens to `chrome.webNavigation.onBeforeNavigate` events.
 3. **Domain Comparison**: If a pinned tab initiates a top-level navigation, the target domain is compared against the locked domain.
 4. **Action**: If they do not match, it opens a new tab with the target URL and restores the pinned tab to its last allowed URL.
-5. **No Overhead**: Navigations within the same domain (or its subdomains) are allowed, and the allowed URL in session storage updates automatically to track your current subpage.
+5. **No Overhead**: Navigations within the same domain (or its subdomains) are allowed, and the allowed URL in local storage updates automatically to track your current subpage.
 
 ## Project Structure
 
@@ -23,7 +23,7 @@ pinnit/
 ├── popup/               # Extension popup UI
 │   ├── popup.html       # Popup structure
 │   ├── popup.css        # Premium dark glassmorphic styling
-│   └── popup.js         # Dynamic tab rendering (retrieved from storage.session)
+│   └── popup.js         # Dynamic tab rendering (retrieved from storage.local)
 └── icons/               # Generated PNG icons
     ├── icon-16.png
     ├── icon-48.png

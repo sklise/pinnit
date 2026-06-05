@@ -17,16 +17,16 @@ function extractDomain(urlStr) {
 }
 
 /**
- * Synchronizes session storage locks with actual pinned tabs in Chrome.
+ * Synchronizes local storage locks with actual pinned tabs in Chrome.
  */
 async function syncLocks() {
-  if (!chrome.storage || !chrome.storage.session) {
-    console.warn('[Pinnit] chrome.storage.session is not available. Please reload the extension.');
+  if (!chrome.storage || !chrome.storage.local) {
+    console.warn('[Pinnit] chrome.storage.local is not available. Please reload the extension.');
     return;
   }
   try {
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
-    const storage = await chrome.storage.session.get(null);
+    const storage = await chrome.storage.local.get(null);
     
     const pinnedTabIds = new Set(pinnedTabs.map(t => t.id));
     const activeLockKeys = Object.keys(storage).filter(key => key.startsWith('tab-'));
@@ -36,7 +36,7 @@ async function syncLocks() {
       const tabId = parseInt(key.substring(4), 10);
       const tab = pinnedTabs.find(t => t.id === tabId);
       if (!tab) {
-        await chrome.storage.session.remove(key);
+        await chrome.storage.local.remove(key);
         console.log(`[Pinnit] Cleaned up stale lock for tab ${tabId}`);
       }
     }
@@ -48,7 +48,7 @@ async function syncLocks() {
 
       const key = `tab-${tab.id}`;
       if (!storage[key]) {
-        await chrome.storage.session.set({
+        await chrome.storage.local.set({
           [key]: {
             domain: domain,
             url: tab.url
@@ -66,13 +66,13 @@ async function syncLocks() {
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   // Only target the main/top-level frame
   if (details.frameId !== 0) return;
-  if (!chrome.storage || !chrome.storage.session) return;
+  if (!chrome.storage || !chrome.storage.local) return;
 
   const tabId = details.tabId;
   const key = `tab-${tabId}`;
 
   try {
-    const storageData = await chrome.storage.session.get(key);
+    const storageData = await chrome.storage.local.get(key);
     const lock = storageData[key];
 
     if (lock) {
@@ -102,7 +102,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
 // Watch for tab status and updates
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (!chrome.storage || !chrome.storage.session) return;
+  if (!chrome.storage || !chrome.storage.local) return;
   try {
     const key = `tab-${tabId}`;
     
@@ -112,14 +112,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         // Tab was just pinned
         const domain = extractDomain(tab.url);
         if (domain) {
-          await chrome.storage.session.set({
+          await chrome.storage.local.set({
             [key]: { domain, url: tab.url }
           });
           console.log(`[Pinnit] Tab ${tabId} pinned. Locked to domain: ${domain}`);
         }
       } else {
         // Tab was just unpinned
-        await chrome.storage.session.remove(key);
+        await chrome.storage.local.remove(key);
         console.log(`[Pinnit] Tab ${tabId} unpinned. Removed domain lock.`);
       }
       return;
@@ -127,7 +127,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
     // Handle URL changes inside a pinned tab
     if ('url' in changeInfo && tab.pinned) {
-      const storageData = await chrome.storage.session.get(key);
+      const storageData = await chrome.storage.local.get(key);
       const lock = storageData[key];
 
       const newDomain = extractDomain(changeInfo.url);
@@ -135,7 +135,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
       if (!lock) {
         // Pinned tab was on a blank/internal page, now navigating to its first web page
-        await chrome.storage.session.set({
+        await chrome.storage.local.set({
           [key]: { domain: newDomain, url: changeInfo.url }
         });
         console.log(`[Pinnit] Locked pinned tab ${tabId} to initial domain: ${newDomain}`);
@@ -144,7 +144,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         const isSameDomain = (newDomain === lock.domain) || newDomain.endsWith('.' + lock.domain);
         if (isSameDomain) {
           // Update the allowed recovery URL so returning to the tab restores this exact subpage
-          await chrome.storage.session.set({
+          await chrome.storage.local.set({
             [key]: { domain: lock.domain, url: changeInfo.url }
           });
         }
@@ -157,9 +157,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 // Clean up locks when tabs are closed
 chrome.tabs.onRemoved.addListener(async (tabId) => {
-  if (!chrome.storage || !chrome.storage.session) return;
+  if (!chrome.storage || !chrome.storage.local) return;
   try {
-    await chrome.storage.session.remove(`tab-${tabId}`);
+    await chrome.storage.local.remove(`tab-${tabId}`);
   } catch (error) {
     console.error('[Pinnit] Error handling tab removal:', error);
   }

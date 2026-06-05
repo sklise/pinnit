@@ -13,7 +13,7 @@ Locks your pinned tabs to their active domains. Opens external link navigations 
 **Detailed Description** [REQUIRED]
 Pinnit is a lightweight, performant productivity utility that automatically restricts your pinned tabs to their active domains. When you pin a tab, Pinnit locks it. If you attempt to navigate to a different domain (by clicking an external link or typing a new URL in the address bar), Pinnit intercepts it, opens the new page in a new tab, and returns the original pinned tab to its last allowed page.
 
-Pinnit operates entirely locally and uses Chrome's native webNavigation and session storage, ensuring maximum performance, battery saving, and absolute privacy.
+Pinnit operates entirely locally and uses Chrome's native webNavigation and local storage, ensuring maximum performance, battery saving, and absolute privacy.
 
 To use Pinnit:
 1. Load a website in a tab (e.g. Hacker News).
@@ -50,7 +50,7 @@ English
 |------------|------|---------------|
 | `webNavigation` | permissions | Used to detect when a pinned tab is initiating a navigation, allowing the extension to intercept it before it commits. |
 | `tabs` | permissions | Used to query active pinned tabs and inspect their URL to extract base domains, open target URLs in new tabs, and return pinned tabs to their last allowed URLs. |
-| `storage` | permissions | Used to persist lock metadata (domain and last allowed URL) for active pinned tabs in `chrome.storage.session` for the duration of the browser session. |
+| `storage` | permissions | Used to persist lock metadata (domain and last allowed URL) for active pinned tabs in `chrome.storage.local` for the duration of the browser session. |
 
 ## Privacy & Data Use
 
@@ -84,7 +84,7 @@ https://github.com/example/pinnit/issues
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 1.0.0 | 2026-06-05 | Initial release with webNavigation interception, session storage locking, and popup dashboard. | Draft |
+| 1.0.0 | 2026-06-05 | Initial release with webNavigation interception, local storage locking, and popup dashboard. | Draft |
 
 ## Review Notes
 
