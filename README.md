@@ -22,7 +22,7 @@ pinnit/
 ├── background.js       # Background service worker (Interception, tracking & redirection)
 ├── popup/               # Extension popup UI
 │   ├── popup.html       # Popup structure
-│   ├── popup.css        # Premium dark glassmorphic styling
+│   ├── popup.css        # High-contrast Swiss Design styling
 │   └── popup.js         # Dynamic tab rendering (retrieved from storage.local)
 └── icons/               # Generated PNG icons
     ├── icon-16.png

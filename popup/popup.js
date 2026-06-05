@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!chrome.storage || !chrome.storage.local) {
       tabList.innerHTML = `
         <div class="empty-state">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--text-muted);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--color-grey-medium);">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
           </svg>
           <span class="empty-title">Reload Required</span>
