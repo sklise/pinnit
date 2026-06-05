@@ -79,8 +79,9 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
       const targetDomain = extractDomain(details.url);
       if (!targetDomain) return; // Ignore non-web URLs (chrome://, file://, etc.)
 
-      // Check if the destination domain is different (and not a subdomain of the locked domain)
-      const isAllowed = (targetDomain === lock.domain) || targetDomain.endsWith('.' + lock.domain);
+      const blockSubdomains = lock.blockSubdomains !== false;
+      // Check if the destination domain is different (and not a subdomain of the locked domain, if allowed)
+      const isAllowed = (targetDomain === lock.domain) || (!blockSubdomains && targetDomain.endsWith('.' + lock.domain));
 
       if (!isAllowed) {
         console.log(`[Pinnit] Domain change detected in tab ${tabId}: ${lock.domain} -> ${targetDomain}. Redirecting to new tab.`);
@@ -140,12 +141,17 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         });
         console.log(`[Pinnit] Locked pinned tab ${tabId} to initial domain: ${newDomain}`);
       } else {
-        // Tab already has a lock. Check if the URL change is within the same domain (or a subdomain)
-        const isSameDomain = (newDomain === lock.domain) || newDomain.endsWith('.' + lock.domain);
+        // Tab already has a lock. Check if the URL change is within the same domain (or a subdomain, if allowed)
+        const blockSubdomains = lock.blockSubdomains !== false;
+        const isSameDomain = (newDomain === lock.domain) || (!blockSubdomains && newDomain.endsWith('.' + lock.domain));
         if (isSameDomain) {
           // Update the allowed recovery URL so returning to the tab restores this exact subpage
           await chrome.storage.local.set({
-            [key]: { domain: lock.domain, url: changeInfo.url }
+            [key]: {
+              domain: lock.domain,
+              url: changeInfo.url,
+              blockSubdomains: blockSubdomains
+            }
           });
         }
       }

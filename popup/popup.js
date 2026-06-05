@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Determine favicon or fallback
       const favIconUrl = tab.favIconUrl || 'chrome://favicon/';
       
+      // Determine if subdomains are blocked (default to true)
+      const blockSubdomains = lock ? (lock.blockSubdomains !== false) : true;
+
       li.innerHTML = `
         <div class="tab-info">
           <div class="tab-title-row">
@@ -67,13 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <span class="tab-domain">${escapeHtml(lockedDomain)}</span>
         </div>
-        <button class="go-tab-btn" title="Focus Tab" aria-label="Focus tab ${escapeHtml(tab.title || '')}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          </svg>
-        </button>
+        <label class="subdomain-toggle" title="Block Subdomains Toggle">
+          <input type="checkbox" class="subdomain-checkbox" ${blockSubdomains ? 'checked' : ''}>
+          <span class="toggle-label">STRICT</span>
+        </label>
       `;
 
       // Click event to navigate/focus this tab
@@ -85,6 +85,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         } catch (err) {
           console.error('Failed to focus tab:', err);
+        }
+      });
+
+      // Handle subdomain preference toggle
+      const checkbox = li.querySelector('.subdomain-checkbox');
+      const toggleContainer = li.querySelector('.subdomain-toggle');
+
+      // Prevent card click focus when clicking checkbox or label block
+      checkbox.addEventListener('click', (e) => e.stopPropagation());
+      toggleContainer.addEventListener('click', (e) => e.stopPropagation());
+
+      checkbox.addEventListener('change', async (e) => {
+        const checked = e.target.checked;
+        try {
+          const storageData = await chrome.storage.local.get(key);
+          const currentLock = storageData[key] || {
+            domain: lockedDomain,
+            url: tabUrl || tab.url
+          };
+          currentLock.blockSubdomains = checked;
+          await chrome.storage.local.set({ [key]: currentLock });
+          console.log(`[Pinnit] Tab ${tab.id} blockSubdomains set to ${checked}`);
+        } catch (err) {
+          console.error('Failed to update subdomain permission:', err);
         }
       });
 

@@ -187,32 +187,82 @@ body {
   color: hsl(0, 100%, 75%); /* Lighter red for visibility against black */
 }
 
-/* Focus Button */
-.go-tab-btn {
-  background: none;
-  border: none;
-  color: var(--color-black);
-  cursor: pointer;
-  padding: 6px;
-  transition: var(--transition-flat);
-  display: flex;
+/* STRICT Toggle - Swiss Style Badge button */
+.subdomain-toggle {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 4px 10px;
+  border: 1px solid var(--color-grey-medium);
+  background-color: var(--bg-main);
+  color: var(--color-grey-medium);
+  transition: var(--transition-flat);
+  user-select: none;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.tab-item:hover .go-tab-btn {
+/* Hovering on STRICT toggle when unselected */
+.subdomain-toggle:hover {
+  background-color: var(--color-grey-light);
+  color: var(--color-black);
+  border-color: var(--color-black);
+}
+
+/* Checked/Selected State (STRICT mode is ON) */
+.subdomain-toggle:has(.subdomain-checkbox:checked) {
+  background-color: var(--color-black);
   color: var(--bg-main);
+  border-color: var(--color-black);
 }
 
-.go-tab-btn:hover {
-  background-color: var(--swiss-red) !important;
-  color: #ffffff !important;
+/* Hovering on STRICT toggle when selected */
+.subdomain-toggle:has(.subdomain-checkbox:checked):hover {
+  background-color: var(--swiss-red);
+  border-color: var(--swiss-red);
+  color: #ffffff;
 }
 
-.go-tab-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
+/* Adjustments when parent tab card is hovered (card becomes black background) */
+.tab-item:hover .subdomain-toggle {
+  border-color: var(--color-grey-medium);
+  background-color: transparent;
+  color: var(--color-grey-medium);
+}
+
+.tab-item:hover .subdomain-toggle:hover {
+  background-color: var(--bg-main);
+  color: var(--color-black);
+  border-color: var(--bg-main);
+}
+
+.tab-item:hover .subdomain-toggle:has(.subdomain-checkbox:checked) {
+  border-color: var(--bg-main);
+  background-color: var(--bg-main);
+  color: var(--color-black);
+}
+
+.tab-item:hover .subdomain-toggle:has(.subdomain-checkbox:checked):hover {
+  background-color: var(--swiss-red);
+  border-color: var(--swiss-red);
+  color: #ffffff;
+}
+
+.toggle-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+/* Hide the checkbox completely */
+.subdomain-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 /* Loading & Empty States - Flat structured boxes */
