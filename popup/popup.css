@@ -64,18 +64,11 @@ body {
   gap: 8px;
 }
 
-.logo-mark {
-  width: 26px;
-  height: 26px;
-  background: linear-gradient(135deg, var(--primary), hsl(260, 90%, 65%));
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  color: #fff;
-  box-shadow: 0 0 12px var(--primary-glow);
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px var(--primary-glow));
 }
 
 .app-title {
