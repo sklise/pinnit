@@ -60,9 +60,6 @@ body {
   width: 28px;
   height: 28px;
   object-fit: contain;
-  border: var(--border-thick);
-  padding: 2px;
-  background-color: var(--color-black);
 }
 
 .app-title {
