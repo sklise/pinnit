@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pinnit</title>
+  <link rel="stylesheet" href="popup.css">
+  <!-- Load Inter font from Google Fonts for a modern, clean typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-mark">P</div>
+        <h1 class="app-title">Pinnit</h1>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot pulsing"></span>
+        <span class="status-text">Active</span>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <section class="overview-section">
+        <h2 class="section-title">Locked Domains</h2>
+        <p class="section-desc">Pinned tabs are restricted to their original domains.</p>
+      </section>
+
+      <section class="list-section">
+        <!-- Dynamic list of locked pinned tabs -->
+        <ul id="locked-tabs-list" class="tab-list">
+          <li class="loading-state">Loading tabs...</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p class="footer-note">To unlock a tab, unpin it in Chrome.</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
