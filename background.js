@@ -1,146 +1,166 @@
-// Service Worker state to lock concurrent sync operations and prevent race conditions
-let isSyncing = false;
-let pendingSync = false;
+/**
+ * Helper to extract domain from a URL, stripping 'www.'
+ */
+function extractDomain(urlStr) {
+  try {
+    if (!urlStr) return '';
+    const url = new URL(urlStr);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    let host = url.hostname.toLowerCase();
+    if (host.startsWith('www.')) {
+      host = host.substring(4);
+    }
+    return host;
+  } catch (e) {
+    return '';
+  }
+}
 
 /**
- * Synchronizes the declarativeNetRequest session rules with the currently pinned tabs.
+ * Synchronizes session storage locks with actual pinned tabs in Chrome.
  */
-async function syncRules() {
-  if (isSyncing) {
-    pendingSync = true;
-    return;
-  }
-  isSyncing = true;
-
+async function syncLocks() {
   try {
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
-    const currentRules = await chrome.declarativeNetRequest.getSessionRules();
-
-    const rulesToRemove = [];
-    const rulesToAdd = [];
-
+    const storage = await chrome.storage.session.get(null);
+    
     const pinnedTabIds = new Set(pinnedTabs.map(t => t.id));
+    const activeLockKeys = Object.keys(storage).filter(key => key.startsWith('tab-'));
 
-    // 1. Identify rules to remove: rules whose corresponding tab is no longer pinned,
-    // or does not have a web URL (HTTP/HTTPS) anymore.
-    for (const rule of currentRules) {
-      const tab = pinnedTabs.find(t => t.id === rule.id);
+    // 1. Clean up stale locks for tabs that are no longer pinned or no longer exist
+    for (const key of activeLockKeys) {
+      const tabId = parseInt(key.substring(4), 10);
+      const tab = pinnedTabs.find(t => t.id === tabId);
       if (!tab) {
-        rulesToRemove.push(rule.id);
-      } else {
-        const url = tab.url || '';
-        if (!url.startsWith('http:') && !url.startsWith('https:')) {
-          rulesToRemove.push(rule.id);
-        }
+        await chrome.storage.session.remove(key);
+        console.log(`[Pinnit] Cleaned up stale lock for tab ${tabId}`);
       }
     }
 
-    // 2. Identify rules to add or update: pinned tabs with HTTP/HTTPS URLs.
+    // 2. Initialize locks for pinned tabs that don't have them yet
     for (const tab of pinnedTabs) {
-      const url = tab.url || '';
-      if (!url.startsWith('http:') && !url.startsWith('https:')) {
-        continue;
-      }
+      const domain = extractDomain(tab.url);
+      if (!domain) continue;
 
-      let currentDomain = '';
-      try {
-        currentDomain = new URL(url).hostname;
-        if (currentDomain.startsWith('www.')) {
-          currentDomain = currentDomain.substring(4);
-        }
-      } catch (e) {
-        console.error('[Pinnit] Failed to parse tab URL:', url, e);
-        continue;
-      }
-
-      if (!currentDomain) continue;
-
-      const existingRule = currentRules.find(r => r.id === tab.id);
-      if (!existingRule) {
-        rulesToAdd.push({
-          id: tab.id,
-          priority: 1,
-          action: { type: 'block' },
-          condition: {
-            tabIds: [tab.id],
-            resourceTypes: ['main_frame'],
-            excludedRequestDomains: [currentDomain]
+      const key = `tab-${tab.id}`;
+      if (!storage[key]) {
+        await chrome.storage.session.set({
+          [key]: {
+            domain: domain,
+            url: tab.url
           }
         });
+        console.log(`[Pinnit] Initialized lock for tab ${tab.id} on domain: ${domain}`);
+      }
+    }
+  } catch (error) {
+    console.error('[Pinnit] Error synchronizing locks:', error);
+  }
+}
+
+// Intercept navigation events before they start loading
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  // Only target the main/top-level frame
+  if (details.frameId !== 0) return;
+
+  const tabId = details.tabId;
+  const key = `tab-${tabId}`;
+
+  try {
+    const storageData = await chrome.storage.session.get(key);
+    const lock = storageData[key];
+
+    if (lock) {
+      const targetDomain = extractDomain(details.url);
+      if (!targetDomain) return; // Ignore non-web URLs (chrome://, file://, etc.)
+
+      // Check if the destination domain is different (and not a subdomain of the locked domain)
+      const isAllowed = (targetDomain === lock.domain) || targetDomain.endsWith('.' + lock.domain);
+
+      if (!isAllowed) {
+        console.log(`[Pinnit] Domain change detected in tab ${tabId}: ${lock.domain} -> ${targetDomain}. Redirecting to new tab.`);
+
+        // 1. Create a new tab with the target URL
+        await chrome.tabs.create({
+          url: details.url,
+          active: true
+        });
+
+        // 2. Cancel original navigation by redirecting the pinned tab back to its last allowed URL
+        await chrome.tabs.update(tabId, { url: lock.url });
+      }
+    }
+  } catch (error) {
+    console.error('[Pinnit] Error handling navigation interception:', error);
+  }
+});
+
+// Watch for tab status and updates
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  try {
+    const key = `tab-${tabId}`;
+    
+    // Handle changes to the pinned state
+    if ('pinned' in changeInfo) {
+      if (changeInfo.pinned) {
+        // Tab was just pinned
+        const domain = extractDomain(tab.url);
+        if (domain) {
+          await chrome.storage.session.set({
+            [key]: { domain, url: tab.url }
+          });
+          console.log(`[Pinnit] Tab ${tabId} pinned. Locked to domain: ${domain}`);
+        }
       } else {
-        const ruleDomain = existingRule.condition.excludedRequestDomains[0];
-        // If the current tab domain has changed, and it is NOT a subdomain of the existing rule domain,
-        // we update the rule (meaning the tab was somehow navigated or reassigned).
-        if (currentDomain !== ruleDomain && !currentDomain.endsWith('.' + ruleDomain)) {
-          rulesToRemove.push(tab.id);
-          rulesToAdd.push({
-            id: tab.id,
-            priority: 1,
-            action: { type: 'block' },
-            condition: {
-              tabIds: [tab.id],
-              resourceTypes: ['main_frame'],
-              excludedRequestDomains: [currentDomain]
-            }
+        // Tab was just unpinned
+        await chrome.storage.session.remove(key);
+        console.log(`[Pinnit] Tab ${tabId} unpinned. Removed domain lock.`);
+      }
+      return;
+    }
+
+    // Handle URL changes inside a pinned tab
+    if ('url' in changeInfo && tab.pinned) {
+      const storageData = await chrome.storage.session.get(key);
+      const lock = storageData[key];
+
+      const newDomain = extractDomain(changeInfo.url);
+      if (!newDomain) return;
+
+      if (!lock) {
+        // Pinned tab was on a blank/internal page, now navigating to its first web page
+        await chrome.storage.session.set({
+          [key]: { domain: newDomain, url: changeInfo.url }
+        });
+        console.log(`[Pinnit] Locked pinned tab ${tabId} to initial domain: ${newDomain}`);
+      } else {
+        // Tab already has a lock. Check if the URL change is within the same domain (or a subdomain)
+        const isSameDomain = (newDomain === lock.domain) || newDomain.endsWith('.' + lock.domain);
+        if (isSameDomain) {
+          // Update the allowed recovery URL so returning to the tab restores this exact subpage
+          await chrome.storage.session.set({
+            [key]: { domain: lock.domain, url: changeInfo.url }
           });
         }
       }
     }
-
-    if (rulesToRemove.length > 0 || rulesToAdd.length > 0) {
-      console.log('[Pinnit] Updating session rules. Removing:', rulesToRemove, 'Adding:', rulesToAdd);
-      await chrome.declarativeNetRequest.updateSessionRules({
-        removeRuleIds: rulesToRemove,
-        addRules: rulesToAdd
-      });
-    }
   } catch (error) {
-    console.error('[Pinnit] Error synchronizing rules:', error);
-  } finally {
-    isSyncing = false;
-    if (pendingSync) {
-      pendingSync = false;
-      // Schedule next sync shortly to handle queued updates
-      setTimeout(syncRules, 50);
-    }
+    console.error('[Pinnit] Error handling tab update:', error);
   }
-}
+});
 
-// Initial setup on extension install or browser startup
-async function initialize() {
+// Clean up locks when tabs are closed
+chrome.tabs.onRemoved.addListener(async (tabId) => {
   try {
-    // Enable the automatic badge count displaying the number of blocked requests on the action icon
-    if (chrome.declarativeNetRequest.setExtensionActionOptions) {
-      await chrome.declarativeNetRequest.setExtensionActionOptions({
-        displayActionCountAsBadgeText: true
-      });
-    }
-  } catch (e) {
-    console.warn('[Pinnit] Could not set extension action options:', e);
-  }
-  await syncRules();
-}
-
-chrome.runtime.onInstalled.addListener(initialize);
-chrome.runtime.onStartup.addListener(initialize);
-
-// Listen for tab updates (e.g. pinned state change or navigation changes)
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Only sync if the pinned state or the URL has updated
-  if ('pinned' in changeInfo || 'url' in changeInfo) {
-    syncRules();
+    await chrome.storage.session.remove(`tab-${tabId}`);
+  } catch (error) {
+    console.error('[Pinnit] Error handling tab removal:', error);
   }
 });
 
-// Remove tab rules when tabs are closed
-chrome.tabs.onRemoved.addListener((tabId) => {
-  syncRules();
-});
+// Synchronize locks on startup and installation
+chrome.runtime.onInstalled.addListener(syncLocks);
+chrome.runtime.onStartup.addListener(syncLocks);
 
-// Handle tab replacements (e.g. pre-rendering changes tab ID)
-chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
-  syncRules();
-});
-
-// Run syncRules immediately on service worker startup to catch active tabs
-syncRules();
+// Run sync immediately on background startup to catch currently open pinned tabs
+syncLocks();

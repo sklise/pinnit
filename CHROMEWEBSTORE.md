@@ -8,24 +8,25 @@
 Pinnit
 
 **Short Description** [REQUIRED]
-Locks your pinned tabs to their active domains to prevent accidental navigations away from your workspace.
+Locks your pinned tabs to their active domains. Opens external link navigations in new tabs automatically.
 
 **Detailed Description** [REQUIRED]
-Pinnit is a lightweight, performant productivity utility that automatically restricts your pinned tabs to their active domains. When you pin a tab, Pinnit locks it. If you click a link pointing to a different domain, or type a new address in the search bar, the navigation is blocked in that tab. 
+Pinnit is a lightweight, performant productivity utility that automatically restricts your pinned tabs to their active domains. When you pin a tab, Pinnit locks it. If you attempt to navigate to a different domain (by clicking an external link or typing a new URL in the address bar), Pinnit intercepts it, opens the new page in a new tab, and returns the original pinned tab to its last allowed page.
 
-Pinnit operates entirely locally and uses Chrome's native declarativeNetRequest engine, ensuring maximum performance, battery saving, and absolute privacy. 
+Pinnit operates entirely locally and uses Chrome's native webNavigation and session storage, ensuring maximum performance, battery saving, and absolute privacy.
 
 To use Pinnit:
-1. Load a website in a tab (e.g. GitHub).
+1. Load a website in a tab (e.g. Hacker News).
 2. Pin the tab. Pinnit immediately locks it to that domain.
-3. Clicking external links or attempting to navigate elsewhere will be blocked.
-4. To allow navigations, simply unpin the tab.
+3. Clicking external links or attempting to navigate elsewhere in this tab will cause the link to open in a new tab, while the pinned tab remains on Hacker News.
+4. Navigating within the same domain is allowed, and Pinnit automatically updates the tab's return point.
+5. To disable the restriction, simply unpin the tab.
 
 **Category** [REQUIRED]
 Productivity
 
 **Single Purpose** [REQUIRED]
-Locks pinned tabs to their current domain to prevent accidental navigations.
+Locks pinned tabs to their current domain and opens external link navigations in new tabs.
 
 **Primary Language** [REQUIRED]
 English
@@ -40,15 +41,16 @@ English
 | Small Promo Tile [RECOMMENDED] | 440×280 | ⬜ Not created | |
 
 ### Screenshot Notes
-- **Screenshot 1**: Showing a pinned tab on a website (e.g. GitHub) attempting to navigate to an external link, showing Chrome's clean block page.
+- **Screenshot 1**: Showing a pinned tab on a website (e.g. Hacker News) and a new tab opening on a different domain after clicking an external link.
 - **Screenshot 2**: Showing the custom Pinnit extension popup UI listing currently locked tabs and their respective domains.
 
 ## Permissions Justification
 
 | Permission | Type | Justification |
 |------------|------|---------------|
-| `declarativeNetRequest` | permissions | Used to register session-scoped rules that block top-level frame navigations on specific pinned tab IDs if they attempt to change domains. |
-| `tabs` | permissions | Used to query active pinned tabs and inspect their URL to extract the base domain name for rule synchronization. |
+| `webNavigation` | permissions | Used to detect when a pinned tab is initiating a navigation, allowing the extension to intercept it before it commits. |
+| `tabs` | permissions | Used to query active pinned tabs and inspect their URL to extract base domains, open target URLs in new tabs, and return pinned tabs to their last allowed URLs. |
+| `storage` | permissions | Used to persist lock metadata (domain and last allowed URL) for active pinned tabs in `chrome.storage.session` for the duration of the browser session. |
 
 ## Privacy & Data Use
 
@@ -82,9 +84,9 @@ https://github.com/example/pinnit/issues
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 1.0.0 | 2026-06-05 | Initial release with automatic domain locking, sync logic, and popup dashboard. | Draft |
+| 1.0.0 | 2026-06-05 | Initial release with webNavigation interception, session storage locking, and popup dashboard. | Draft |
 
 ## Review Notes
 
 ### Known Issues / Limitations
-- DNR rules block navigations at the request level, meaning Chrome's default error page ("This page has been blocked by an extension") is displayed when navigation is intercepted.
+- Navigation interception works for all main frame top-level navigations. Frame/iframe internal navigations are not blocked.

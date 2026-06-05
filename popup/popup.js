@@ -2,9 +2,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabList = document.getElementById('locked-tabs-list');
 
   try {
-    // 1. Fetch all pinned tabs and current DNR session rules
+    // 1. Fetch all pinned tabs and current session storage locks
     const pinnedTabs = await chrome.tabs.query({ pinned: true });
-    const rules = await chrome.declarativeNetRequest.getSessionRules();
+    const storage = await chrome.storage.session.get(null);
 
     // Clear loading state
     tabList.innerHTML = '';
@@ -16,15 +16,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Render pinned tab entries
     pinnedTabs.forEach(tab => {
-      // Find matching session rule for this tab
-      const rule = rules.find(r => r.id === tab.id);
+      const key = `tab-${tab.id}`;
+      const lock = storage[key];
       
       const tabUrl = tab.url || '';
       const isWebPage = tabUrl.startsWith('http:') || tabUrl.startsWith('https:');
       
       let lockedDomain = 'Not locked';
-      if (rule && rule.condition && rule.condition.excludedRequestDomains) {
-        lockedDomain = rule.condition.excludedRequestDomains[0];
+      if (lock && lock.domain) {
+        lockedDomain = lock.domain;
       } else if (isWebPage) {
         try {
           let domain = new URL(tabUrl).hostname;

@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "Pinnit",
   "version": "1.0.0",
-  "description": "Automatically locks pinned tabs to their current domain to prevent accidental navigations.",
+  "description": "Automatically locks pinned tabs to their domains. Redirects external navigations to new tabs.",
   "background": {
     "service_worker": "background.js"
   },
   "permissions": [
-    "declarativeNetRequest",
-    "tabs"
+    "webNavigation",
+    "tabs",
+    "storage"
   ],
   "action": {
     "default_popup": "popup/popup.html",
