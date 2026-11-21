@@ -1,6 +1,6 @@
 /* Swiss Design System (International Typographic Style) */
 :root {
-  --font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   
   /* Color Palette */
   --bg-main: #ffffff;
@@ -246,6 +246,32 @@ body {
   background-color: var(--swiss-red);
   border-color: var(--swiss-red);
   color: #ffffff;
+}
+
+@supports not selector(:has(*)) {
+  .subdomain-toggle.is-strict {
+    background-color: var(--color-black);
+    color: var(--bg-main);
+    border-color: var(--color-black);
+  }
+
+  .subdomain-toggle.is-strict:hover {
+    background-color: var(--swiss-red);
+    border-color: var(--swiss-red);
+    color: #ffffff;
+  }
+
+  .tab-item:hover .subdomain-toggle.is-strict {
+    border-color: var(--bg-main);
+    background-color: var(--bg-main);
+    color: var(--color-black);
+  }
+
+  .tab-item:hover .subdomain-toggle.is-strict:hover {
+    background-color: var(--swiss-red);
+    border-color: var(--swiss-red);
+    color: #ffffff;
+  }
 }
 
 .toggle-label {

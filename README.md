@@ -37,6 +37,21 @@ To load and test the extension locally:
 2. Navigate to `chrome://extensions/`.
 3. Enable **Developer mode** using the toggle switch in the top right corner.
 4. Click the **Load unpacked** button in the top left.
-5. Select the `/Users/sklise/Projects/pinnit` directory.
+5. Select the `pinnit` project directory.
 
 Once loaded, pin any tab with an active web page (e.g. `https://news.ycombinator.com/`) and try to click an external link or type a different address. You will see a new tab open with the link, while the pinned tab stays on Hacker News!
+
+## Building for the Chrome Web Store
+
+To generate a clean ZIP archive ready for submission to the Chrome Developer Dashboard:
+
+```bash
+./package-extension.sh
+```
+
+This creates `pinnit-v<version>.zip` excluding git files, developer documentation, and promotional assets. See [CHROMEWEBSTORE.md](CHROMEWEBSTORE.md) for listing metadata, permissions justifications, and store copy.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
